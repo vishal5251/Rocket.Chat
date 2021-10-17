@@ -11,7 +11,7 @@ const {
 callbacks.run = function(hook, item, constant) {
 	const rocketchatHooksEnd = metrics.rocketchatHooks.startTimer({ hook, callbacks_length: callbacks.length });
 
-	const result = originalRun(hook, item, constant);
+	const result = originalRun.call(callbacks, hook, item, constant);
 
 	rocketchatHooksEnd();
 
@@ -21,7 +21,7 @@ callbacks.run = function(hook, item, constant) {
 callbacks.runItem = function({ callback, result, constant, hook, time = Date.now() }) {
 	const rocketchatCallbacksEnd = metrics.rocketchatCallbacks.startTimer({ hook, callback: callback.id });
 
-	const newResult = originalRunItem({ callback, result, constant });
+	const newResult = originalRunItem.call(callbacks, { callback, result, constant });
 
 	StatsTracker.timing('callbacks.time', Date.now() - time, [
 		`hook:${ hook }`,
