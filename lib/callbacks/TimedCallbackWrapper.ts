@@ -2,6 +2,7 @@ import type { Callback } from './Callback';
 import type { ICallbackRunner } from './ICallbackRunner';
 import type { ICallbackWrapper } from './ICallbackWrapper';
 
+/** @deprecated */
 export class TimedCallbackWrapper implements ICallbackWrapper {
 	wrap<I, K>(
 		hook: string,

@@ -12,6 +12,7 @@ const pipe =
 	(item: I, constant?: K): I =>
 		g(f(item, constant), constant);
 
+/** @deprecated */
 export class Callbacks implements ICallbackRunner {
 	readonly priority = CallbackPriority;
 

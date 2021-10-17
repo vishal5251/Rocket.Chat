@@ -3,6 +3,7 @@ import type { Callback } from './Callback';
 import type { ICallbackRunner } from './ICallbackRunner';
 import type { ICallbackWrapper } from './ICallbackWrapper';
 
+/** @deprecated */
 export class LoggingCallbackWrapper implements ICallbackWrapper {
 	constructor(public logger: Logger) {}
 
