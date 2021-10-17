@@ -1,141 +1,17 @@
 import { Meteor } from 'meteor/meteor';
 import { Random } from 'meteor/random';
 
-import type { Logger } from '../app/logger/server';
-
-export const CallbackPriority = {
-	HIGH: -1000,
-	MEDIUM: 0,
-	LOW: 1000,
-} as const;
-
-type Callback<I, K> = {
-	(item: I, constant?: K): I;
-	hook: string;
-	priority: number;
-	id: string;
-	stack?: string;
-};
-
-interface ICallbackRunner {
-	runItem<I, K>({
-		callback,
-		result: item,
-		constant,
-	}: {
-		hook: string;
-		callback: (item: I, constant?: K) => I;
-		result: I;
-		constant?: K;
-	}): I;
-}
-
-interface ICallbackWrapper {
-	wrap<I, K>(
-		hook: string,
-		chainedCallback: (item: I, constant?: K) => I,
-	): (item: I, constant?: K) => I;
-
-	wrapOne<I, K>(
-		runner: ICallbackRunner,
-		hook: string,
-		callback: Callback<I, K>,
-	): (item: I, constant?: K) => I;
-}
-
-export class DefaultCallbackWrapper implements ICallbackWrapper {
-	wrap<I, K>(
-		_hook: string,
-		chainedCallback: (item: I, constant?: K) => I,
-	): (item: I, constant?: K) => I {
-		return chainedCallback;
-	}
-
-	wrapOne<I, K>(
-		runner: ICallbackRunner,
-		hook: string,
-		callback: Callback<I, K>,
-	): (item: I, constant?: K) => I {
-		return (item: I, constant?: K): I =>
-			runner.runItem({
-				hook,
-				callback,
-				result: item,
-				constant,
-			});
-	}
-}
-
-export class LoggingCallbackWrapper implements ICallbackWrapper {
-	constructor(public logger: Logger) {}
-
-	wrap<I, K>(
-		_hook: string,
-		chainedCallback: (item: I, constant?: K) => I,
-	): (item: I, constant?: K) => I {
-		return chainedCallback;
-	}
-
-	wrapOne<I, K>(
-		runner: ICallbackRunner,
-		hook: string,
-		callback: Callback<I, K>,
-	): (item: I, constant?: K) => I {
-		return (item: I, constant?: K): I => {
-			this.logger?.debug(`Executing callback with id ${callback.id} for hook ${hook}`);
-			return runner.runItem({
-				hook,
-				callback,
-				result: item,
-				constant,
-			});
-		};
-	}
-}
-
-export class TimedCallbackWrapper implements ICallbackWrapper {
-	wrap<I, K>(
-		hook: string,
-		chainedCallback: (item: I, constant?: K) => I,
-	): (item: I, constant?: K) => I {
-		return (item: I, constant?: K): I => {
-			const time = Date.now();
-			const ret = chainedCallback(item, constant);
-			const totalTime = Date.now() - time;
-			console.log(`${hook}:`, totalTime);
-			return ret;
-		};
-	}
-
-	wrapOne<I, K>(
-		runner: ICallbackRunner,
-		hook: string,
-		callback: Callback<I, K>,
-	): (item: I, constant?: K) => I {
-		return (item: I, constant?: K): I => {
-			const time = Date.now();
-
-			const result = runner.runItem({
-				hook,
-				callback,
-				result: item,
-				constant,
-			});
-
-			const currentTime = Date.now() - time;
-			const stack = callback.stack?.split?.('\n')?.[2]?.match(/\(.+\)/)?.[0];
-			console.log(String(currentTime), callback.hook, callback.id, stack);
-			return result;
-		};
-	}
-}
+import { Callback } from './Callback';
+import { CallbackPriority } from './CallbackPriority';
+import { DefaultCallbackWrapper } from './DefaultCallbackWrapper';
+import { ICallbackRunner } from './ICallbackRunner';
 
 const pipe =
 	<I, K>(f: (item: I, constant?: K) => I, g: (item: I, constant?: K) => I) =>
 	(item: I, constant?: K): I =>
 		g(f(item, constant), constant);
 
-class Callbacks implements ICallbackRunner {
+export class Callbacks implements ICallbackRunner {
 	priority = CallbackPriority;
 
 	wrapper = new DefaultCallbackWrapper();
@@ -282,5 +158,3 @@ class Callbacks implements ICallbackRunner {
 		parallelCallback?.<I, K>(item, constant);
 	}
 }
-
-export const callbacks = new Callbacks();
