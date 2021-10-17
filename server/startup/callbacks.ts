@@ -1,4 +1,4 @@
-import { callbacks } from '../../lib/callbacks';
+import { callbacks, LoggingCallbackWrapper } from '../../lib/callbacks';
 import { Logger } from '../lib/logger/Logger';
 
-callbacks.logger = new Logger('Callbacks');
+callbacks.wrapper = new LoggingCallbackWrapper(new Logger('Callbacks'));

@@ -3,7 +3,7 @@ import { Random } from 'meteor/random';
 
 import type { Logger } from '../app/logger/server';
 
-const CallbackPriority = {
+export const CallbackPriority = {
 	HIGH: -1000,
 	MEDIUM: 0,
 	LOW: 1000,
@@ -17,104 +17,177 @@ type Callback<I, K> = {
 	stack?: string;
 };
 
-const pipe =
-	<I, K>(f: (item: I, constant?: K) => I, g: (item: I, constant?: K) => I) =>
-	(item: I, constant?: K): I =>
-		g(f(item, constant), constant);
+interface ICallbackRunner {
+	runItem<I, K>({
+		callback,
+		result: item,
+		constant,
+	}: {
+		hook: string;
+		callback: (item: I, constant?: K) => I;
+		result: I;
+		constant?: K;
+	}): I;
+}
 
-class Callbacks {
-	logger: Logger | null = null;
+interface ICallbackWrapper {
+	wrap<I, K>(
+		hook: string,
+		chainedCallback: (item: I, constant?: K) => I,
+	): (item: I, constant?: K) => I;
 
-	timed = false;
+	wrapOne<I, K>(
+		runner: ICallbackRunner,
+		hook: string,
+		callback: Callback<I, K>,
+	): (item: I, constant?: K) => I;
+}
 
-	priority = CallbackPriority;
+export class DefaultCallbackWrapper implements ICallbackWrapper {
+	wrap<I, K>(
+		_hook: string,
+		chainedCallback: (item: I, constant?: K) => I,
+	): (item: I, constant?: K) => I {
+		return chainedCallback;
+	}
 
-	private callbacksByHook = new Map<string, Callback<any, any>[]>();
-
-	private combinedCallbacksByHook = new Map<string, (...args: any[]) => any>();
-
-	private wrapDefault<I, K>(callback: Callback<I, K>): (item: I, constant?: K) => I {
+	wrapOne<I, K>(
+		runner: ICallbackRunner,
+		hook: string,
+		callback: Callback<I, K>,
+	): (item: I, constant?: K) => I {
 		return (item: I, constant?: K): I =>
-			this.runItem({
-				hook: callback.hook,
+			runner.runItem({
+				hook,
 				callback,
 				result: item,
 				constant,
 			});
 	}
+}
 
-	private combineCallbacksDefault<I, K>(
+export class LoggingCallbackWrapper implements ICallbackWrapper {
+	constructor(public logger: Logger) {}
+
+	wrap<I, K>(
 		_hook: string,
-		callbacks: Callback<I, K>[],
+		chainedCallback: (item: I, constant?: K) => I,
 	): (item: I, constant?: K) => I {
-		return callbacks.map(this.wrapDefault).reduce(pipe);
+		return chainedCallback;
 	}
 
-	private wrapLogged<I, K>(callback: Callback<I, K>): (item: I, constant?: K) => I {
-		const next = this.wrapDefault(callback);
-
+	wrapOne<I, K>(
+		runner: ICallbackRunner,
+		hook: string,
+		callback: Callback<I, K>,
+	): (item: I, constant?: K) => I {
 		return (item: I, constant?: K): I => {
-			this.logger?.debug(`Executing callback with id ${callback.id} for hook ${callback.hook}`);
-			return next(item, constant);
+			this.logger?.debug(`Executing callback with id ${callback.id} for hook ${hook}`);
+			return runner.runItem({
+				hook,
+				callback,
+				result: item,
+				constant,
+			});
 		};
 	}
+}
 
-	private combineCallbacksLogged<I, K>(
-		_hook: string,
-		callbacks: Callback<I, K>[],
+export class TimedCallbackWrapper implements ICallbackWrapper {
+	wrap<I, K>(
+		hook: string,
+		chainedCallback: (item: I, constant?: K) => I,
 	): (item: I, constant?: K) => I {
-		return callbacks.map(this.wrapLogged).reduce(pipe);
-	}
-
-	private wrapRun<I, K>(hook: string, callback: (item: I, constant?: K) => I) {
 		return (item: I, constant?: K): I => {
 			const time = Date.now();
-			const ret = callback(item, constant);
+			const ret = chainedCallback(item, constant);
 			const totalTime = Date.now() - time;
 			console.log(`${hook}:`, totalTime);
 			return ret;
 		};
 	}
 
-	private wrapTimed<I, K>(callback: Callback<I, K>): (item: I, constant?: K) => I {
-		const next = this.wrapDefault(callback);
-
+	wrapOne<I, K>(
+		runner: ICallbackRunner,
+		hook: string,
+		callback: Callback<I, K>,
+	): (item: I, constant?: K) => I {
 		return (item: I, constant?: K): I => {
 			const time = Date.now();
-			const result = next(item, constant);
+
+			const result = runner.runItem({
+				hook,
+				callback,
+				result: item,
+				constant,
+			});
+
 			const currentTime = Date.now() - time;
 			const stack = callback.stack?.split?.('\n')?.[2]?.match(/\(.+\)/)?.[0];
 			console.log(String(currentTime), callback.hook, callback.id, stack);
 			return result;
 		};
 	}
+}
 
-	private combineCallbacksTimed<I, K>(
+const pipe =
+	<I, K>(f: (item: I, constant?: K) => I, g: (item: I, constant?: K) => I) =>
+	(item: I, constant?: K): I =>
+		g(f(item, constant), constant);
+
+class Callbacks implements ICallbackRunner {
+	priority = CallbackPriority;
+
+	wrapper = new DefaultCallbackWrapper();
+
+	private callbacksByHook = new Map<string, Callback<any, any>[]>();
+
+	private chainedCallbacksByHook = new Map<string, <I, K>(item: I, constant?: K) => I>();
+
+	private parallelCallbacksByHook = new Map<string, <I, K>(item: I, constant?: K) => void>();
+
+	private createChainedCallback<I, K>(
+		runner: ICallbackRunner,
 		hook: string,
 		callbacks: Callback<I, K>[],
 	): (item: I, constant?: K) => I {
-		return this.wrapRun(hook, callbacks.map(this.wrapTimed).reduce(pipe));
+		const { wrapper } = this;
+
+		const chainedCallback = callbacks
+			.map((callback) => wrapper.wrapOne(runner, hook, callback))
+			.reduce(pipe);
+
+		return wrapper.wrap(hook, chainedCallback);
 	}
 
-	private combineCallbacks<I, K>(
+	private createParallelCallback<I, K>(
+		runner: ICallbackRunner,
 		hook: string,
 		callbacks: Callback<I, K>[],
-	): (item: I, constant?: K) => I {
-		if (this.timed) {
-			return this.combineCallbacksTimed(hook, callbacks);
-		}
-
-		if (this.logger) {
-			return this.combineCallbacksLogged(hook, callbacks);
-		}
-
-		return this.combineCallbacksDefault(hook, callbacks);
+	): (item: I, constant?: K) => void {
+		return (item: I, constant?: K): void => {
+			callbacks?.forEach((callback) => {
+				Meteor.defer(() => {
+					runner.runItem({ callback, hook, result: item, constant });
+				});
+			});
+		};
 	}
 
-	private updateCombinedCallback(hook: string): void {
-		const callbacks = this.callbacksByHook.get(hook) ?? [];
-		const combinedCallback = this.combineCallbacks(hook, callbacks);
-		this.combinedCallbacksByHook.set(hook, combinedCallback);
+	private updateCombinedCallbacks(hook: string): void {
+		const callbacks = this.callbacksByHook.get(hook);
+
+		if (!callbacks || callbacks.length === 0) {
+			this.chainedCallbacksByHook.delete(hook);
+			this.parallelCallbacksByHook.delete(hook);
+			return;
+		}
+
+		const combinedCallback = this.createChainedCallback(this, hook, callbacks);
+		this.chainedCallbacksByHook.set(hook, combinedCallback);
+
+		const parallelCallback = this.createParallelCallback(this, hook, callbacks);
+		this.parallelCallbacksByHook.set(hook, parallelCallback);
 	}
 
 	/**
@@ -151,7 +224,7 @@ class Callbacks {
 
 		this.callbacksByHook.set(hook, callbacks);
 
-		this.updateCombinedCallback(hook);
+		this.updateCombinedCallbacks(hook);
 	}
 
 	/**
@@ -162,9 +235,14 @@ class Callbacks {
 	remove(hook: string, id: string): void {
 		const callbacks =
 			this.callbacksByHook.get(hook)?.filter((callback) => callback.id !== id) ?? [];
-		this.callbacksByHook.set(hook, callbacks);
 
-		this.updateCombinedCallback(hook);
+		if (callbacks.length > 0) {
+			this.callbacksByHook.set(hook, callbacks);
+		} else {
+			this.callbacksByHook.delete(hook);
+		}
+
+		this.updateCombinedCallbacks(hook);
 	}
 
 	runItem<I, K>({
@@ -189,8 +267,8 @@ class Callbacks {
 	 * @returns Returns the item after it's been through all the callbacks for this hook
 	 */
 	run<I, K>(hook: string, item: I, constant?: K): I {
-		const combinedCallback = this.combinedCallbacksByHook.get(hook);
-		return combinedCallback?.(item, constant) ?? item;
+		const combinedCallback = this.chainedCallbacksByHook.get(hook);
+		return combinedCallback?.<I, K>(item, constant) ?? item;
 	}
 
 	/**
@@ -200,12 +278,8 @@ class Callbacks {
 	 * @param constant - An optional constant that will be passed along to each callback
 	 */
 	runAsync<I, K>(hook: string, item: I, constant?: K): void {
-		const callbacks = this.callbacksByHook.get(hook);
-		callbacks?.forEach((cb) => {
-			Meteor.defer(() => {
-				cb(item, constant);
-			});
-		});
+		const parallelCallback = this.parallelCallbacksByHook.get(hook);
+		parallelCallback?.<I, K>(item, constant);
 	}
 }
 

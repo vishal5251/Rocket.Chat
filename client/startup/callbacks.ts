@@ -1,4 +1,6 @@
-import { callbacks } from '../../lib/callbacks';
+import { callbacks, TimedCallbackWrapper } from '../../lib/callbacks';
 import { getConfig } from '../lib/utils/getConfig';
 
-callbacks.timed = [getConfig('debug'), getConfig('timed-callbacks')].includes('true');
+if ([getConfig('debug'), getConfig('timed-callbacks')].includes('true')) {
+	callbacks.wrapper = new TimedCallbackWrapper();
+}
