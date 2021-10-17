@@ -5,6 +5,7 @@ import { Callback } from './Callback';
 import { CallbackPriority } from './CallbackPriority';
 import { DefaultCallbackWrapper } from './DefaultCallbackWrapper';
 import { ICallbackRunner } from './ICallbackRunner';
+import { ICallbackWrapper } from './ICallbackWrapper';
 
 const pipe =
 	<I, K>(f: (item: I, constant?: K) => I, g: (item: I, constant?: K) => I) =>
@@ -12,9 +13,7 @@ const pipe =
 		g(f(item, constant), constant);
 
 export class Callbacks implements ICallbackRunner {
-	priority = CallbackPriority;
-
-	wrapper = new DefaultCallbackWrapper();
+	readonly priority = CallbackPriority;
 
 	private callbacksByHook = new Map<string, Callback<any, any>[]>();
 
@@ -33,7 +32,7 @@ export class Callbacks implements ICallbackRunner {
 			.map((callback) => wrapper.wrapOne(runner, hook, callback))
 			.reduce(pipe);
 
-		return wrapper.wrap(hook, chainedCallback);
+		return wrapper.wrap(hook, chainedCallback, callbacks.length);
 	}
 
 	private createParallelCallback<I, K>(
@@ -41,10 +40,14 @@ export class Callbacks implements ICallbackRunner {
 		hook: string,
 		callbacks: Callback<I, K>[],
 	): (item: I, constant?: K) => void {
+		const { wrapper } = this;
+
+		const wrappedCallbacks = callbacks.map((callback) => wrapper.wrapOne(runner, hook, callback));
+
 		return (item: I, constant?: K): void => {
-			callbacks?.forEach((callback) => {
+			wrappedCallbacks.forEach((callback) => {
 				Meteor.defer(() => {
-					runner.runItem({ callback, hook, result: item, constant });
+					callback(item, constant);
 				});
 			});
 		};
@@ -65,6 +68,8 @@ export class Callbacks implements ICallbackRunner {
 		const parallelCallback = this.createParallelCallback(this, hook, callbacks);
 		this.parallelCallbacksByHook.set(hook, parallelCallback);
 	}
+
+	wrapper: ICallbackWrapper = new DefaultCallbackWrapper();
 
 	/**
 	 * Add a callback function to a hook

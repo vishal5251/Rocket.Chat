@@ -5,6 +5,7 @@ export interface ICallbackWrapper {
 	wrap<I, K>(
 		hook: string,
 		chainedCallback: (item: I, constant?: K) => I,
+		callbackCount: number,
 	): (item: I, constant?: K) => I;
 
 	wrapOne<I, K>(
