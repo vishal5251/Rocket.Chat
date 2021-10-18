@@ -7,7 +7,7 @@ import differenceInMilliseconds from 'date-fns/differenceInMilliseconds';
 import { Emitter } from '@rocket.chat/emitter';
 import { escapeHTML } from '@rocket.chat/string-helpers';
 
-import { promises } from '../../../promises/client';
+import { promises } from '../../../../lib/promises';
 import { RoomManager } from './RoomManager';
 import { readMessage } from './readMessages';
 import { renderMessageBody } from '../../../../client/lib/utils/renderMessageBody';

@@ -11,7 +11,7 @@ import {
 	addMessageToList,
 } from '../../../../../ui-utils/client/lib/MessageAction';
 import { callWithErrorHandling } from '../../../../../../client/lib/utils/callWithErrorHandling';
-import { promises } from '../../../../../promises/client';
+import { promises } from '../../../../../../lib/promises';
 import { isURL } from '../../../../../utils/lib/isURL';
 import { openUserCard } from '../../../lib/UserCard';
 import { messageArgs } from '../../../../../ui-utils/client/lib/messageArgs';

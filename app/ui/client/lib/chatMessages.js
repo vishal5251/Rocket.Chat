@@ -18,7 +18,7 @@ import {
 } from '../../../ui-utils/client';
 import { settings } from '../../../settings/client';
 import { callbacks } from '../../../../lib/callbacks';
-import { promises } from '../../../promises/client';
+import { promises } from '../../../../lib/promises';
 import { hasAtLeastOnePermission } from '../../../authorization/client';
 import { Messages, Rooms, ChatMessage, ChatSubscription } from '../../../models/client';
 import { emoji } from '../../../emoji/client';

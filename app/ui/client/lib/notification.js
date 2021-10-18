@@ -12,7 +12,7 @@ import { e2e } from '../../../e2e/client';
 import { Users, ChatSubscription } from '../../../models';
 import { getUserPreference } from '../../../utils';
 import { getUserAvatarURL } from '../../../utils/lib/getUserAvatarURL';
-import { promises } from '../../../promises/client';
+import { promises } from '../../../../lib/promises';
 import { CustomSounds } from '../../../custom-sounds/client/lib/CustomSounds';
 import { getAvatarAsPng } from '../../../../client/lib/utils/getAvatarAsPng';
 

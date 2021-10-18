@@ -5,11 +5,11 @@ import { Tracker } from 'meteor/tracker';
 import { e2e } from '../../app/e2e/client/rocketchat.e2e';
 import { Subscriptions, Rooms } from '../../app/models/client';
 import { Notifications } from '../../app/notifications/client';
-import { promises } from '../../app/promises/client';
 import { settings } from '../../app/settings/client';
 import { IMessage } from '../../definition/IMessage';
 import { IRoom } from '../../definition/IRoom';
 import { ISubscription } from '../../definition/ISubscription';
+import { promises } from '../../lib/promises';
 import { isLayoutEmbedded } from '../lib/utils/isLayoutEmbedded';
 import { waitUntilFind } from '../lib/utils/waitUntilFind';
 
