@@ -1,5 +1,4 @@
 import { Callback } from './Callback';
-import { ICallbackRunner } from './ICallbackRunner';
 
 export interface ICallbackWrapper {
 	wrap<I, K>(
@@ -8,9 +7,5 @@ export interface ICallbackWrapper {
 		callbackCount: number,
 	): (item: I, constant?: K) => I;
 
-	wrapOne<I, K>(
-		runner: ICallbackRunner,
-		hook: string,
-		callback: Callback<I, K>,
-	): (item: I, constant?: K) => I;
+	wrapOne<I, K>(hook: string, callback: Callback<I, K>): (item: I, constant?: K) => I;
 }

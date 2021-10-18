@@ -1,6 +1,5 @@
 import type { ICallbackWrapper } from '../../../lib/callbacks/ICallbackWrapper';
 import type { Callback } from '../../../lib/callbacks/Callback';
-import type { ICallbackRunner } from '../../../lib/callbacks/ICallbackRunner';
 import { metrics } from './lib/metrics';
 import StatsTracker from './lib/statsTracker';
 
@@ -26,13 +25,13 @@ export class MetricsCallbackWrapper implements ICallbackWrapper {
 		};
 	}
 
-	wrapOne<I, K>(runner: ICallbackRunner, hook: string, callback: Callback<I, K>): (item: I, constant?: K) => I {
+	wrapOne<I, K>(hook: string, callback: Callback<I, K>): (item: I, constant?: K) => I {
 		return (item: I, constant?: K): I => {
 			const time = Date.now();
 
 			const rocketchatCallbacksEnd = metrics.rocketchatCallbacks.startTimer({ hook, callback: callback.id });
 
-			const newResult = runner.runItem({ hook, callback, result: item, constant });
+			const newResult = callback(item, constant);
 
 			StatsTracker.timing('callbacks.time', Date.now() - time, [
 				`hook:${ hook }`,

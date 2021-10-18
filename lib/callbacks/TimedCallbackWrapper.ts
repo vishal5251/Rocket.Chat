@@ -1,5 +1,4 @@
 import type { Callback } from './Callback';
-import type { ICallbackRunner } from './ICallbackRunner';
 import type { ICallbackWrapper } from './ICallbackWrapper';
 
 /** @deprecated */
@@ -17,20 +16,11 @@ export class TimedCallbackWrapper implements ICallbackWrapper {
 		};
 	}
 
-	wrapOne<I, K>(
-		runner: ICallbackRunner,
-		hook: string,
-		callback: Callback<I, K>,
-	): (item: I, constant?: K) => I {
+	wrapOne<I, K>(_hook: string, callback: Callback<I, K>): (item: I, constant?: K) => I {
 		return (item: I, constant?: K): I => {
 			const time = Date.now();
 
-			const result = runner.runItem({
-				hook,
-				callback,
-				result: item,
-				constant,
-			});
+			const result = callback(item, constant);
 
 			const currentTime = Date.now() - time;
 			const stack = callback.stack?.split?.('\n')?.[2]?.match(/\(.+\)/)?.[0];

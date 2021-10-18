@@ -4,7 +4,6 @@ import { Random } from 'meteor/random';
 import { Callback } from './Callback';
 import { CallbackPriority } from './CallbackPriority';
 import { DefaultCallbackWrapper } from './DefaultCallbackWrapper';
-import { ICallbackRunner } from './ICallbackRunner';
 import { ICallbackWrapper } from './ICallbackWrapper';
 
 const pipe =
@@ -13,7 +12,7 @@ const pipe =
 		g(f(item, constant), constant);
 
 /** @deprecated */
-export class Callbacks implements ICallbackRunner {
+export class Callbacks {
 	readonly priority = CallbackPriority;
 
 	private callbacksByHook = new Map<string, Callback<any, any>[]>();
@@ -23,27 +22,25 @@ export class Callbacks implements ICallbackRunner {
 	private parallelCallbacksByHook = new Map<string, <I, K>(item: I, constant?: K) => void>();
 
 	private createChainedCallback<I, K>(
-		runner: ICallbackRunner,
 		hook: string,
 		callbacks: Callback<I, K>[],
 	): (item: I, constant?: K) => I {
 		const { wrapper } = this;
 
 		const chainedCallback = callbacks
-			.map((callback) => wrapper.wrapOne(runner, hook, callback))
+			.map((callback) => wrapper.wrapOne(hook, callback))
 			.reduce(pipe);
 
 		return wrapper.wrap(hook, chainedCallback, callbacks.length);
 	}
 
 	private createParallelCallback<I, K>(
-		runner: ICallbackRunner,
 		hook: string,
 		callbacks: Callback<I, K>[],
 	): (item: I, constant?: K) => void {
 		const { wrapper } = this;
 
-		const wrappedCallbacks = callbacks.map((callback) => wrapper.wrapOne(runner, hook, callback));
+		const wrappedCallbacks = callbacks.map((callback) => wrapper.wrapOne(hook, callback));
 
 		return (item: I, constant?: K): void => {
 			wrappedCallbacks.forEach((callback) => {
@@ -63,10 +60,10 @@ export class Callbacks implements ICallbackRunner {
 			return;
 		}
 
-		const combinedCallback = this.createChainedCallback(this, hook, callbacks);
+		const combinedCallback = this.createChainedCallback(hook, callbacks);
 		this.chainedCallbacksByHook.set(hook, combinedCallback);
 
-		const parallelCallback = this.createParallelCallback(this, hook, callbacks);
+		const parallelCallback = this.createParallelCallback(hook, callbacks);
 		this.parallelCallbacksByHook.set(hook, parallelCallback);
 	}
 
@@ -125,20 +122,6 @@ export class Callbacks implements ICallbackRunner {
 		}
 
 		this.updateCombinedCallbacks(hook);
-	}
-
-	runItem<I, K>({
-		callback,
-		result: item,
-		constant,
-	}: {
-		hook: string;
-		callback: (item: I, constant?: K) => I;
-		result: I;
-		constant?: K;
-	}): I {
-		const next = callback(item, constant);
-		return typeof next === 'undefined' ? item : next;
 	}
 
 	/**
