@@ -7,24 +7,27 @@ import { DefaultCallbackWrapper } from './DefaultCallbackWrapper';
 import { ICallbackWrapper } from './ICallbackWrapper';
 
 const pipe =
-	<I, K>(f: (item: I, constant?: K) => I, g: (item: I, constant?: K) => I) =>
-	(item: I, constant?: K): I =>
-		g(f(item, constant), constant);
+	<I, K extends unknown[]>(
+		f: (item: I, ...constants: K) => I,
+		g: (item: I, ...constants: K) => I,
+	) =>
+	(item: I, ...constants: K): I =>
+		g(f(item, ...constants), ...constants);
 
 /** @deprecated */
 export class Callbacks {
 	readonly priority = CallbackPriority;
 
-	private callbacksByHook = new Map<string, Callback<any, any>[]>();
+	private callbacksByHook = new Map<string, Callback<any, any[]>[]>();
 
-	private chainedCallbacksByHook = new Map<string, <I, K>(item: I, constant?: K) => I>();
+	private chainedCallbacksByHook = new Map<string, <I>(item: I, ...constants: any[]) => I>();
 
-	private parallelCallbacksByHook = new Map<string, <I, K>(item: I, constant?: K) => void>();
+	private parallelCallbacksByHook = new Map<string, <I>(item: I, ...constants: any[]) => void>();
 
-	private createChainedCallback<I, K>(
+	private createChainedCallback<I, K extends unknown[]>(
 		hook: string,
 		callbacks: Callback<I, K>[],
-	): (item: I, constant?: K) => I {
+	): (item: I, ...constants: K) => I {
 		const { wrapper } = this;
 
 		const chainedCallback = callbacks
@@ -34,18 +37,18 @@ export class Callbacks {
 		return wrapper.wrap(hook, chainedCallback, callbacks.length);
 	}
 
-	private createParallelCallback<I, K>(
+	private createParallelCallback<I, K extends unknown[]>(
 		hook: string,
 		callbacks: Callback<I, K>[],
-	): (item: I, constant?: K) => void {
+	): (item: I, ...constants: K) => void {
 		const { wrapper } = this;
 
 		const wrappedCallbacks = callbacks.map((callback) => wrapper.wrapOne(hook, callback));
 
-		return (item: I, constant?: K): void => {
+		return (item: I, ...constants: K): void => {
 			wrappedCallbacks.forEach((callback) => {
 				Meteor.defer(() => {
-					callback(item, constant);
+					callback(item, ...constants);
 				});
 			});
 		};
@@ -76,9 +79,9 @@ export class Callbacks {
 	 * @param priority - The callback run priority (order)
 	 * @param id - Human friendly name for this callback
 	 */
-	add<C extends (item: any, constant?: any) => any>(
+	add<F extends (item: any, ...constants: any[]) => any>(
 		hook: string,
-		callback: C,
+		callback: F,
 		priority: number = CallbackPriority.MEDIUM,
 		id: string = Random.id(),
 	): void {
@@ -128,22 +131,22 @@ export class Callbacks {
 	 * Successively run all of a hook's callbacks on an item
 	 * @param hook - The name of the hook
 	 * @param item - The post, comment, modifier, etc. on which to run the callbacks
-	 * @param constant - An optional constant that will be passed along to each callback
+	 * @param constants - Optional constants that will be passed along to each callback
 	 * @returns Returns the item after it's been through all the callbacks for this hook
 	 */
-	run<I, K>(hook: string, item: I, constant?: K): I {
+	run<I>(hook: string, item: I, ...constants: any[]): I {
 		const combinedCallback = this.chainedCallbacksByHook.get(hook);
-		return combinedCallback?.<I, K>(item, constant) ?? item;
+		return combinedCallback?.<I>(item, ...constants) ?? item;
 	}
 
 	/**
 	 * Successively run all of a hook's callbacks on an item, in async mode
 	 * @param hook - The name of the hook
 	 * @param item - The post, comment, modifier, etc. on which to run the callbacks
-	 * @param constant - An optional constant that will be passed along to each callback
+	 * @param constants - Optional constants that will be passed along to each callback
 	 */
-	runAsync<I, K>(hook: string, item: I, constant?: K): void {
+	runAsync<I>(hook: string, item: I, ...constants: any[]): void {
 		const parallelCallback = this.parallelCallbacksByHook.get(hook);
-		parallelCallback?.<I, K>(item, constant);
+		parallelCallback?.<I>(item, ...constants);
 	}
 }

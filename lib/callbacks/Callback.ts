@@ -1,5 +1,5 @@
-export type Callback<I, K> = {
-	(item: I, constant?: K): I;
+export type Callback<I, K extends unknown[]> = {
+	(item: I, ...constants: K): I;
 	hook: string;
 	priority: number;
 	id: string;

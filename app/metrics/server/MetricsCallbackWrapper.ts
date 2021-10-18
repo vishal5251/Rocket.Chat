@@ -10,28 +10,28 @@ export class MetricsCallbackWrapper implements ICallbackWrapper {
 		this.innerWrapper = innerWrapper;
 	}
 
-	wrap<I, K>(hook: string, chainedCallback: (item: I, constant?: K) => I, callbackCount: number): (item: I, constant?: K) => I {
+	wrap<I, K extends unknown[]>(hook: string, chainedCallback: (item: I, ...constants: K) => I, callbackCount: number): (item: I, ...constants: K) => I {
 		const innerCallback = this.innerWrapper.wrap(hook, chainedCallback, callbackCount);
 
-		return (item: I, constant?: K): I => {
+		return (item: I, ...constants: K): I => {
 			const rocketchatHooksEnd = metrics.rocketchatHooks.startTimer({
 				hook,
 				// eslint-disable-next-line @typescript-eslint/camelcase
 				callbacks_length: callbackCount,
 			});
-			const next = innerCallback(item, constant);
+			const next = innerCallback(item, ...constants);
 			rocketchatHooksEnd();
 			return next;
 		};
 	}
 
-	wrapOne<I, K>(hook: string, callback: Callback<I, K>): (item: I, constant?: K) => I {
-		return (item: I, constant?: K): I => {
+	wrapOne<I, K extends unknown[]>(hook: string, callback: Callback<I, K>): (item: I, ...constants: K) => I {
+		return (item: I, ...constants: K): I => {
 			const time = Date.now();
 
 			const rocketchatCallbacksEnd = metrics.rocketchatCallbacks.startTimer({ hook, callback: callback.id });
 
-			const newResult = callback(item, constant);
+			const newResult = callback(item, ...constants);
 
 			StatsTracker.timing('callbacks.time', Date.now() - time, [
 				`hook:${ hook }`,

@@ -1,11 +1,14 @@
 import { Callback } from './Callback';
 
 export interface ICallbackWrapper {
-	wrap<I, K>(
+	wrap<I, K extends unknown[]>(
 		hook: string,
-		chainedCallback: (item: I, constant?: K) => I,
+		chainedCallback: (item: I, ...constants: K) => I,
 		callbackCount: number,
-	): (item: I, constant?: K) => I;
+	): (item: I, ...constants: K) => I;
 
-	wrapOne<I, K>(hook: string, callback: Callback<I, K>): (item: I, constant?: K) => I;
+	wrapOne<I, K extends unknown[]>(
+		hook: string,
+		callback: Callback<I, K>,
+	): (item: I, ...constants: K) => I;
 }

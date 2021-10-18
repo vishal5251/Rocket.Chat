@@ -6,17 +6,20 @@ import type { ICallbackWrapper } from './ICallbackWrapper';
 export class LoggingCallbackWrapper implements ICallbackWrapper {
 	constructor(public logger: Logger) {}
 
-	wrap<I, K>(
+	wrap<I, K extends unknown[]>(
 		_hook: string,
-		chainedCallback: (item: I, constant?: K) => I,
-	): (item: I, constant?: K) => I {
+		chainedCallback: (item: I, ...constants: K) => I,
+	): (item: I, ...constants: K) => I {
 		return chainedCallback;
 	}
 
-	wrapOne<I, K>(hook: string, callback: Callback<I, K>): (item: I, constant?: K) => I {
-		return (item: I, constant?: K): I => {
+	wrapOne<I, K extends unknown[]>(
+		hook: string,
+		callback: Callback<I, K>,
+	): (item: I, ...constants: K) => I {
+		return (item: I, ...constants: K): I => {
 			this.logger?.debug(`Executing callback with id ${callback.id} for hook ${hook}`);
-			return callback(item, constant);
+			return callback(item, ...constants);
 		};
 	}
 }
