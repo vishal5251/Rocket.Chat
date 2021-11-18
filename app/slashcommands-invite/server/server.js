@@ -5,12 +5,12 @@ import { TAPi18n } from 'meteor/rocketchat:tap-i18n';
 import { slashCommands } from '../../utils';
 import { Subscriptions } from '../../models';
 import { api } from '../../../server/sdk/api';
+import { inviteFederatedUser } from '../../federation-bridge/server/methods';
 
 /*
 * Invite is a named function that will replace /invite commands
 * @param {Object} message - The message object
 */
-
 
 function Invite(command, params, item) {
 	if (command !== 'invite' || !Match.test(params, String)) {
@@ -21,6 +21,16 @@ function Invite(command, params, item) {
 	if (usernames.length === 0) {
 		return;
 	}
+
+	// Check if it is a federation invite
+	// /invite fed:@rc_b_alan:b.rc.allskar.com
+	if (usernames[0].startsWith('fed:')) {
+		// Fix the username
+		usernames[0] = usernames[0].replace('fed:', '');
+
+		Promise.await(inviteFederatedUser(item.rid, usernames[0]));
+	}
+
 	let users = Meteor.users.find({
 		username: {
 			$in: usernames,

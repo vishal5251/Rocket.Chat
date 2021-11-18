@@ -23,6 +23,7 @@ import '../app/emoji-custom/server';
 import '../app/emoji-emojione/server';
 import '../app/error-handler';
 import '../app/federation/server';
+import '../app/federation-bridge/server';
 import '../app/file';
 import '../app/file-upload';
 import '../app/github-enterprise/server';
