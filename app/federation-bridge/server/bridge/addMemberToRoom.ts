@@ -8,7 +8,7 @@ import { AddMemberToRoomMembership } from '../IMatrixEventContent/IMatrixEventCo
 import { createUser } from '../methods/createUser';
 import { setRoomJoinRules } from './setRoomJoinRules';
 import { setRoomName } from './setRoomName';
-import { addToQueue, matrixEventQueue } from './bridge';
+import { addToQueue } from './bridge';
 
 const ensureRoom = async (matrixRoomId: string, roomId: string, username: string, roomState?: IMatrixEvent<MatrixEventType>[]): Promise<string> => {
 	const room = await Rooms.findOneById(roomId);
