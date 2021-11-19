@@ -19,6 +19,8 @@ const registration: AppServiceRegistration = yaml.load(
 
 // Define the event handler
 const eventHandler = async (event: IMatrixEvent<MatrixEventType>): Promise<void> => {
+	console.log(`Processing ${ event.type }...`, JSON.stringify(event, null, 2));
+
 	switch (event.type) {
 		case MatrixEventType.CREATE_ROOM: {
 			await handleCreateRoom(event as IMatrixEvent<MatrixEventType.CREATE_ROOM>);
@@ -64,7 +66,14 @@ const eventHandler = async (event: IMatrixEvent<MatrixEventType>): Promise<void>
 };
 
 // Create the queue
-export const matrixEventQueue: queueAsPromised<IMatrixEvent<MatrixEventType>> = fastq.promise(eventHandler, 1);
+const matrixEventQueue: queueAsPromised<IMatrixEvent<MatrixEventType>> = fastq.promise(eventHandler, 1);
+
+export const addToQueue = (event: IMatrixEvent<MatrixEventType>): void => {
+	console.log(`Queueing ${ event.type }...`);
+
+	// TODO: Handle error
+	matrixEventQueue.push(event).catch((err) => console.error(err));
+};
 
 export const bridge = new Bridge({
 	homeserverUrl: currentServer.homeserverUrl,
@@ -85,10 +94,7 @@ export const bridge = new Bridge({
 			// Get the event
 			const event = request.getData() as unknown as IMatrixEvent<MatrixEventType>;
 
-			console.log(`Queueing ${ event.type }...`, event);
-
-			// TODO: Handle error
-			matrixEventQueue.push(event).catch((err) => console.error(err));
+			addToQueue(event);
 		},
 	},
 });

@@ -15,6 +15,7 @@ export const setRoomName = async (
 		$set: {
 			name,
 			fname: name,
+			bridged: true, // TODO: this should not be here
 		},
 	});
 

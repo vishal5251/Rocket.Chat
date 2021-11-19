@@ -1,7 +1,7 @@
 id: rocketchat
 hs_token: afe7e2d6f965b6d16c33b70e27492f072bb20dd6b19033950a5d4eae1c504142
 as_token: 784e89060d205cd5531046210731718586411761caca31ddda738cf28d2d4e13
-url: 'https://b8e9-2804-2984-55c-6000-00-1012.ngrok.io'
+url: 'https://c33488717778.ngrok.io'
 sender_localpart: 'rc_b_bot'
 namespaces:
   users:

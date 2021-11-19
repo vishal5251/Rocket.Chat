@@ -173,6 +173,7 @@ const mergeSubRoom = (subscription) => {
 			departmentId: 1,
 			source: 1,
 			queuedAt: 1,
+			bridged: 1,
 		},
 	};
 
@@ -214,6 +215,7 @@ const mergeSubRoom = (subscription) => {
 		ts,
 		source,
 		queuedAt,
+		bridged,
 	} = room;
 
 	subscription.lm = subscription.lr ? new Date(Math.max(subscription.lr, lastRoomUpdate)) : lastRoomUpdate;
@@ -252,6 +254,7 @@ const mergeSubRoom = (subscription) => {
 		ts,
 		source,
 		queuedAt,
+		bridged,
 	});
 };
 
@@ -295,6 +298,7 @@ const mergeRoomSub = (room) => {
 		ts,
 		source,
 		queuedAt,
+		bridged,
 	} = room;
 
 	Subscriptions.update({
@@ -333,6 +337,7 @@ const mergeRoomSub = (room) => {
 			ts,
 			source,
 			queuedAt,
+			bridged,
 			...getLowerCaseNames(room, sub.name, sub.fname),
 		},
 	});

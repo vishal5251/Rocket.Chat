@@ -13,15 +13,15 @@ class MatrixBridgedUserModel extends Base {
 	}
 
 	getMatrixId(uid: string): string | null {
-		const bridgedRoom: IMatrixBridgedUser = this.findOne({ uid });
+		const bridgedUser: IMatrixBridgedUser = this.findOne({ uid });
 
-		return bridgedRoom ? bridgedRoom.mui : null;
+		return bridgedUser ? bridgedUser.mui : null;
 	}
 
 	getId(mui: string): string | null {
-		const bridgedRoom: IMatrixBridgedUser = this.findOne({ mui });
+		const bridgedUser: IMatrixBridgedUser = this.findOne({ mui });
 
-		return bridgedRoom ? bridgedRoom.uid : null;
+		return bridgedUser ? bridgedUser.uid : null;
 	}
 }
 
