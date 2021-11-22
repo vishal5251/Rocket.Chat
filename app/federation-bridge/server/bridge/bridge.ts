@@ -15,7 +15,7 @@ import { setRoomTopic } from './setRoomTopic';
 
 const registration: AppServiceRegistration = yaml.load(
 	currentServer.registrationFile,
-);
+) as AppServiceRegistration;
 
 // Define the event handler
 const eventHandler = async (event: IMatrixEvent<MatrixEventType>): Promise<void> => {
