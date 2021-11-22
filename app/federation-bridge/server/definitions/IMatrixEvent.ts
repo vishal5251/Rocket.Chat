@@ -3,6 +3,8 @@ import { EventContent } from '../IMatrixEventContent';
 
 export interface IMatrixEvent<T extends MatrixEventType> {
 	age: number;
+	// TODO: add the contents of other events, not important right now
+	// @ts-ignore
 	content: EventContent[T];
 	invite_room_state?: IMatrixEvent<MatrixEventType>[];
 	event_id: string;

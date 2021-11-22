@@ -1,7 +1,7 @@
 import { MatrixProfileInfo } from 'matrix-bot-sdk';
 
 import { bridge } from '../bridge';
-import { MatrixBridgedUser, Users } from '../../../models';
+import { MatrixBridgedUser, Users } from '../../../models/server';
 import { IUser } from '../../../../definition/IUser';
 import { currentServer } from '../servers';
 import { IMatrixBridgedUser } from '../../../models/server/models/MatrixBridgedUser';
@@ -32,7 +32,7 @@ export async function upsertBridgedUser(u: IUser): Promise<void> {
 	MatrixBridgedUser.upsert({ uid: u._id }, { uid: u._id, mui: matrixUserId });
 }
 
-export const syncUsersByUsername = async (usernames: string[]): Promise<void> => {
+export const syncUsersByUsername = async (usernames: string[]): Promise<void[]> => {
 	// Get the bridged users
 	const bridgedUserIds = MatrixBridgedUser.find({}, { uid: true }).map(
 		(v: IMatrixBridgedUser) => v.uid,

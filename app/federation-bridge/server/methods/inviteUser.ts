@@ -1,6 +1,6 @@
 import { bridge } from '../bridge';
 import { createUser } from './createUser';
-import { MatrixBridgedRoom, MatrixBridgedUser } from '../../../models';
+import { MatrixBridgedRoom, MatrixBridgedUser } from '../../../models/server';
 
 export const inviteUser = async (roomId: string, matrixUserId: string): Promise<void> => {
 	// Check if the user already exists locally
@@ -11,8 +11,12 @@ export const inviteUser = async (roomId: string, matrixUserId: string): Promise<
 	}
 
 	// Find the bridged room id
-	const matrixRoomId = await MatrixBridgedRoom.getMatrixId(roomId);
+	const roomMatrixId = await MatrixBridgedRoom.getMatrixId(roomId);
+
+	if (!roomMatrixId) {
+		throw new Error(`Could not find room matrix id for ${ roomId }`);
+	}
 
 	// Add our user
-	await bridge.getIntent().invite(matrixRoomId, matrixUserId);
+	await bridge.getIntent().invite(roomMatrixId, matrixUserId);
 };

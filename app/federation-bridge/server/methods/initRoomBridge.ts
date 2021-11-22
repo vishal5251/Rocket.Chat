@@ -1,4 +1,4 @@
-import { MatrixBridgedRoom, MatrixBridgedUser } from '../../../models';
+import { MatrixBridgedRoom, MatrixBridgedUser } from '../../../models/server';
 import { IUser } from '../../../../definition/IUser';
 import { IRoom } from '../../../../definition/IRoom';
 import { bridge } from '../bridge';
@@ -31,6 +31,10 @@ export const initRoomBridge = async (user: IUser, room: IRoom): Promise<void> =>
 
 	// Retrieve the matrix user
 	const userMatrixId = MatrixBridgedUser.getMatrixId(user._id);
+
+	if (!userMatrixId) {
+		throw new Error(`Could not find user matrix id for ${ user._id }`);
+	}
 
 	// Add our user
 	await intent.invite(matrixRoom.room_id, userMatrixId);

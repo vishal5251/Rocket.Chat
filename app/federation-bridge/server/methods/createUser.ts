@@ -1,5 +1,5 @@
 import { IUser } from '../../../../definition/IUser';
-import { MatrixBridgedUser, Users } from '../../../models';
+import { MatrixBridgedUser, Users } from '../../../models/server';
 
 export const createUser = async (matrixUserId: string, displayName: string): Promise<IUser> => {
 	// Check if a user with the same username exists
