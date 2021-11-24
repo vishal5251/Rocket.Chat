@@ -259,7 +259,7 @@
 		"lodash.get": "^4.4.2",
 		"mailparser": "^3.2.0",
 		"marked": "^0.7.0",
-		"matrix-appservice-bridge": "^3.1.2",
+		"matrix-appservice-bridge": "^3.2.0",
 		"mem": "^6.1.1",
 		"meteor-node-stubs": "^1.0.3",
 		"mime-db": "^1.48.0",
